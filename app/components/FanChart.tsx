@@ -1,8 +1,10 @@
 "use client";
+import { useState } from "react";
 import type { RetirementProjection } from "../lib/api";
 
 // Dependency-free SVG fan chart: outer band p5-p95, inner band p25-p75, median line.
 export function FanChart({ proj, retirementAge }: { proj: RetirementProjection; retirementAge: number }) {
+  const [hover, setHover] = useState<number | null>(null);
   const W = 760, H = 320, padL = 64, padR = 16, padT = 16, padB = 34;
   const cfH = 46;                 // height of the cashflow strip at the bottom
   const ages = proj.ages;
@@ -33,7 +35,7 @@ export function FanChart({ proj, retirementAge }: { proj: RetirementProjection; 
   const yticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * maxY);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" onMouseLeave={() => setHover(null)}>
       {yticks.map((v, i) => (
         <g key={i}>
           <line x1={padL} x2={W - padR} y1={y(v)} y2={y(v)} stroke="var(--border)" strokeWidth={1} />
@@ -62,9 +64,17 @@ export function FanChart({ proj, retirementAge }: { proj: RetirementProjection; 
         return (
           <rect key={i} x={x(i) - barW / 2} width={barW}
             y={c > 0 ? cfZero - h : cfZero} height={h}
-            fill={c > 0 ? "var(--positive)" : "#f87171"} opacity={0.85} />
+            fill={c > 0 ? "var(--positive)" : "#f87171"} opacity={0.35} />
         );
       })}
+      {/* line graphs over the bars */}
+      {(() => {
+        const pts = (pred: (c: number) => boolean, color: string) => {
+          const d = cf.map((c, i) => (pred(c) ? `${x(i)},${cfZero - cfBar(c)}` : null)).filter(Boolean);
+          return d.length > 1 ? <polyline points={d.join(" ")} fill="none" stroke={color} strokeWidth={1.8} /> : null;
+        };
+        return <>{pts((c) => c > 0, "var(--positive)")}{pts((c) => c < 0, "#f87171")}</>;
+      })()}
       <text x={padL} y={potBottom + 11} fontSize={10} fill="var(--positive)">contributions in</text>
       <text x={W - padR} y={H - padB - 2} fontSize={10} fill="#f87171" textAnchor="end">drawdowns out</text>
 
@@ -72,6 +82,40 @@ export function FanChart({ proj, retirementAge }: { proj: RetirementProjection; 
       {ages.filter((_, i) => i % 10 === 0 || i === ages.length - 1).map((a) => (
         <text key={a} x={x(ages.indexOf(a))} y={H - padB + 20} textAnchor="middle"
           fontSize={11} fill="var(--muted)">{a}</text>
+      ))}
+
+      {/* hover: cursor, point marker and tooltip */}
+      {hover !== null && (() => {
+        const i = hover;
+        const flow = cf[i] ?? 0;
+        const retired = ages[i] >= retirementAge;
+        const lines: { t: string; c?: string }[] = [
+          { t: `Age ${ages[i]}` },
+          { t: `Pot ${fmt(p.p50[i])}`, c: "var(--accent)" },
+        ];
+        if (!proj.deterministic) lines.push({ t: `Range ${fmt(p.p5[i])} to ${fmt(p.p95[i])}`, c: "var(--muted)" });
+        if (flow > 0) lines.push({ t: `Contribution ${fmt(flow)}`, c: "var(--positive)" });
+        else if (flow < 0) lines.push({ t: `Drawdown ${fmt(-flow)}`, c: "#f87171" });
+        else lines.push({ t: retired ? "No drawdown" : "", c: "var(--muted)" });
+        const bw = 150, bh = 16 * lines.length + 12;
+        const bx = Math.min(Math.max(x(i) + 10, padL), W - padR - bw);
+        return (
+          <g>
+            <line x1={x(i)} x2={x(i)} y1={padT} y2={H - padB} stroke="var(--muted)" strokeWidth={1} opacity={0.5} />
+            <circle cx={x(i)} cy={y(p.p50[i])} r={3.5} fill="var(--accent)" />
+            <rect x={bx} y={padT} width={bw} height={bh} rx={8} fill="var(--surface-2)" stroke="var(--border)" />
+            {lines.filter((l) => l.t).map((l, k) => (
+              <text key={k} x={bx + 10} y={padT + 18 + k * 16} fontSize={11} fill={l.c ?? "var(--foreground)"}>{l.t}</text>
+            ))}
+          </g>
+        );
+      })()}
+
+      {/* invisible columns for hover detection */}
+      {ages.map((_, i) => (
+        <rect key={i} x={x(i) - (W - padL - padR) / ages.length / 2} y={padT}
+          width={(W - padL - padR) / ages.length} height={H - padB - padT}
+          fill="transparent" onMouseEnter={() => setHover(i)} />
       ))}
     </svg>
   );
