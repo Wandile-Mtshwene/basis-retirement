@@ -39,6 +39,7 @@ class RetirementProjection:
     success_probability: float                 # P(money lasts); 1.0 for percentage drawdown
     depletion_age: int | None
     first_year_income: float                   # today's money
+    cashflows: list[float] = field(default_factory=list)  # +contribution / -drawdown per age
     real_return: float = 0.0
     inputs: dict = field(default_factory=dict)
     n_sims: int = 0
@@ -123,6 +124,17 @@ def project_retirement(
     first_income = (withdrawal_value * capital_at_retirement["p50"]
                     if withdrawal_type == "percentage" else withdrawal_value)
 
+    # Per-age cashflow: contributions (+) while saving, drawdowns (-) in retirement.
+    cashflows = [0.0] * (total_years + 1)
+    for yr in range(total_years):
+        if yr < accum_years:
+            cashflows[yr] = round(annual_contribution * (1.0 + contribution_escalation) ** yr, 2)
+        elif withdrawal_type == "percentage":
+            median_balance = float(np.percentile(paths[:, yr], 50))
+            cashflows[yr] = round(-withdrawal_value * median_balance, 2)
+        else:
+            cashflows[yr] = round(-withdrawal_value, 2)
+
     return RetirementProjection(
         mode="deterministic" if deterministic else "monte_carlo",
         withdrawal_type=withdrawal_type,
@@ -133,6 +145,7 @@ def project_retirement(
         success_probability=round(success, 4),
         depletion_age=depletion,
         first_year_income=round(first_income, 2),
+        cashflows=cashflows,
         real_return=round(real_return, 4),
         inputs={
             "current_age": current_age, "retirement_age": retirement_age, "end_age": end_age,

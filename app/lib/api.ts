@@ -104,6 +104,7 @@ export type RetirementProjection = {
   success_probability: number;
   depletion_age: number | null;
   first_year_income: number;
+  cashflows: number[];
   real_return: number;
   inputs: Record<string, number | string>;
   n_sims: number;
