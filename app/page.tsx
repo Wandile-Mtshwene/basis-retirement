@@ -127,11 +127,10 @@ export default function Retirement() {
               </div>
 
               <div className="card p-5">
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <h2 className="font-semibold">
-                    Projected pot in today&apos;s money{isMC ? ` (${proj.n_sims.toLocaleString()} simulations)` : ""}
+                    Projection in today&apos;s money{isMC ? ` (${proj.n_sims.toLocaleString()} simulations)` : ""}
                   </h2>
-                  {isMC && <Legend />}
                 </div>
                 <FanChart proj={proj} retirementAge={req.retirement_age} />
                 <p className="text-muted text-xs mt-2">
@@ -156,13 +155,4 @@ function PctInput({ v, on }: { v: number; on: (pct: number) => void }) {
 }
 function Stat({ label, value }: { label: string; value: string }) {
   return <div><div className="field-label">{label}</div><div className="text-sm font-mono">{value}</div></div>;
-}
-function Legend() {
-  return (
-    <div className="flex items-center gap-3 text-xs text-muted">
-      <span className="inline-flex items-center gap-1"><i className="inline-block w-3 h-3 rounded-sm" style={{ background: "var(--accent)", opacity: 0.22 }} />50% range</span>
-      <span className="inline-flex items-center gap-1"><i className="inline-block w-3 h-3 rounded-sm" style={{ background: "var(--accent)", opacity: 0.14 }} />90% range</span>
-      <span className="inline-flex items-center gap-1"><i className="inline-block w-4 h-0.5" style={{ background: "var(--accent)" }} />median</span>
-    </div>
-  );
 }
