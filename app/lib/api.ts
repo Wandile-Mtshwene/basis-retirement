@@ -88,19 +88,24 @@ export type RetirementRequest = {
   expected_return: number;
   return_volatility: number;
   inflation: number;
-  target_income: number;
+  withdrawal_type: "amount" | "percentage";
+  withdrawal_value: number;
+  mode: "deterministic" | "monte_carlo";
   n_sims: number;
 };
 
 export type RetirementProjection = {
+  mode: "deterministic" | "monte_carlo";
+  withdrawal_type: "amount" | "percentage";
+  deterministic: boolean;
   ages: number[];
   percentiles: Record<"p5" | "p25" | "p50" | "p75" | "p95", number[]>;
   capital_at_retirement: Record<"p5" | "p25" | "p50" | "p75" | "p95", number>;
   success_probability: number;
-  probability_of_ruin: number;
-  median_depletion_age: number | null;
-  target_income_first_year: number;
-  inputs: Record<string, number>;
+  depletion_age: number | null;
+  first_year_income: number;
+  real_return: number;
+  inputs: Record<string, number | string>;
   n_sims: number;
 };
 

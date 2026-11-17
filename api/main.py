@@ -28,11 +28,13 @@ class RetirementRequest(BaseModel):
     end_age: int = Field(95, ge=75, le=110)
     current_savings: float = Field(500_000, ge=0)
     annual_contribution: float = Field(120_000, ge=0)
-    contribution_escalation: float = Field(0.05, ge=0, le=0.2)
-    expected_return: float = Field(0.10, ge=0, le=0.3)
+    contribution_escalation: float = Field(0.0, ge=0, le=0.1, description="real escalation above inflation")
+    expected_return: float = Field(0.10, ge=0, le=0.3, description="nominal expected return")
     return_volatility: float = Field(0.12, ge=0, le=0.5)
     inflation: float = Field(0.05, ge=0, le=0.2)
-    target_income: float = Field(300_000, ge=0)
+    withdrawal_type: Literal["amount", "percentage"] = "amount"
+    withdrawal_value: float = Field(400_000, ge=0, description="today's rand (amount) or fraction e.g. 0.05 (percentage)")
+    mode: Literal["deterministic", "monte_carlo"] = "deterministic"
     n_sims: int = Field(10_000, ge=500, le=50_000)
 
 
